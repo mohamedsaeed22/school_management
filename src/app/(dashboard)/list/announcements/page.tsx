@@ -2,10 +2,11 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { announcementsData, role } from "@/lib/data";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Announcement, Class } from "@prisma/client";
+import { role } from "@/lib/utils";
+import { auth } from "@clerk/nextjs/server";
+import { Announcement, Class, Prisma } from "@prisma/client";
 import Image from "next/image";
 
 type AnnouncementList = Announcement & { class: Class };
@@ -24,10 +25,14 @@ const columns = [
     accessor: "date",
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin"
+    ? [
+        {
+          header: "Actions",
+          accessor: "action",
+        },
+      ]
+    : []),
 ];
 const renderRow = (item: AnnouncementList) => (
   <tr
@@ -41,12 +46,12 @@ const renderRow = (item: AnnouncementList) => (
     </td>
     <td>
       <div className="flex items-center gap-2">
-        {/* {role === "admin" && (
-            <>
-              <FormContainer table="announcement" type="update" data={item} />
-              <FormContainer table="announcement" type="delete" id={item.id} />
-            </>
-          )} */}
+        {role === "admin" && (
+          <>
+            {/* <FormContainer table="announcement" type="update" data={item} />
+            <FormContainer table="announcement" type="delete" id={item.id} /> */}
+          </>
+        )}
       </div>
     </td>
   </tr>

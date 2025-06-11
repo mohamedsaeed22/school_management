@@ -2,9 +2,9 @@ import FormModal from "@/components/FormModal";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
-import { eventsData, role } from "@/lib/data";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
+import { currentUserId, role } from "@/lib/utils";
 import { Class, Prisma } from "@prisma/client";
 import Image from "next/image";
 
@@ -34,10 +34,14 @@ const columns = [
     accessor: "endTime",
     className: "hidden md:table-cell",
   },
-  {
-    header: "Actions",
-    accessor: "action",
-  },
+  ...(role === "admin"
+    ? [
+        {
+          header: "Actions",
+          accessor: "action",
+        },
+      ]
+    : []),
 ];
 const renderRow = (item: EventList) => (
   <tr
@@ -80,7 +84,6 @@ const EventListPage = async ({
 }: {
   searchParams: { [key: string]: string | undefined };
 }) => {
-
   const { page, ...queryParams } = searchParams;
 
   const p = page ? parseInt(page) : 1;
@@ -105,19 +108,19 @@ const EventListPage = async ({
 
   // ROLE CONDITIONS
 
-  // const roleConditions = {
-  //   teacher: { lessons: { some: { teacherId: currentUserId! } } },
-  //   student: { students: { some: { id: currentUserId! } } },
-  //   parent: { students: { some: { parentId: currentUserId! } } },
-  // };
+  const roleConditions = {
+    teacher: { lessons: { some: { teacherId: currentUserId! } } },
+    student: { students: { some: { id: currentUserId! } } },
+    parent: { students: { some: { parentId: currentUserId! } } },
+  };
 
-  // query.OR = [
-  //   { classId: null },
-  //   // {
-  //   //   class: roleConditions[role as keyof typeof roleConditions] || {},
-  //   // },
-  // ];
-
+  query.OR = [
+    { classId: null },
+    {
+      class: roleConditions[role as keyof typeof roleConditions] || {},
+    },
+  ];
+  
   const [data, count] = await prisma.$transaction([
     prisma.event.findMany({
       where: query,
@@ -151,7 +154,7 @@ const EventListPage = async ({
       {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={data} />
       {/* PAGINATION */}
-      <Pagination page={p} count={count}/>
+      <Pagination page={p} count={count} />
     </div>
   );
 };
